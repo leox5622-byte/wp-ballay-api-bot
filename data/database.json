@@ -1,0 +1,206 @@
+{
+  "users": {
+    "8801858627986@c.us": {
+      "id": "8801858627986@c.us",
+      "coins": 10,
+      "exp": 51,
+      "level": 1,
+      "lastActive": 1751040572818,
+      "commandCount": 5,
+      "messageCount": 27
+    },
+    "8801723153138@c.us": {
+      "id": "8801723153138@c.us",
+      "coins": 489,
+      "exp": 318,
+      "level": 4,
+      "lastActive": 1751044535912,
+      "commandCount": 415,
+      "messageCount": 138,
+      "lastDailyReward": "27/06/2025"
+    },
+    "120363400307278215@g.us": {
+      "id": "120363400307278215@g.us",
+      "coins": 10,
+      "exp": 2,
+      "level": 1,
+      "lastActive": 1750871671004,
+      "commandCount": 0,
+      "messageCount": 1
+    },
+    "8801736402071@c.us": {
+      "id": "8801736402071@c.us",
+      "coins": 10,
+      "exp": 19,
+      "level": 1,
+      "lastActive": 1751014981726,
+      "commandCount": 1,
+      "messageCount": 9
+    },
+    "8801712499905@c.us": {
+      "id": "8801712499905@c.us",
+      "coins": 0,
+      "exp": 2,
+      "level": 1,
+      "lastActive": 1750885335484,
+      "commandCount": 4,
+      "lastDailyReward": null,
+      "joinDate": 1750885215203,
+      "messageCount": 1
+    },
+    "120363114421949711@g.us": {
+      "id": "120363114421949711@g.us",
+      "coins": 0,
+      "exp": 2,
+      "level": 1,
+      "lastActive": 1751019768281,
+      "commandCount": 0,
+      "lastDailyReward": null,
+      "joinDate": 1750929476260,
+      "messageCount": 2
+    },
+    "918240658156@c.us": {
+      "id": "918240658156@c.us",
+      "coins": 0,
+      "exp": 34,
+      "level": 1,
+      "lastActive": 1751020645334,
+      "commandCount": 0,
+      "lastDailyReward": null,
+      "joinDate": 1750952614860,
+      "messageCount": 16
+    },
+    "109427713650834@lid": {
+      "id": "109427713650834@lid",
+      "coins": 1000,
+      "exp": 0,
+      "level": 1,
+      "lastActive": 1751013422993,
+      "commandCount": 0,
+      "lastDailyReward": null,
+      "joinDate": 1751013422992
+    },
+    "219494303703244@lid": {
+      "id": "219494303703244@lid",
+      "coins": 700,
+      "exp": 2,
+      "level": 1,
+      "lastActive": 1756589565015,
+      "commandCount": 2,
+      "lastDailyReward": null,
+      "joinDate": 1751014183615,
+      "money": 277,
+      "messageCount": 1
+    },
+    "6073436114963@lid": {
+      "id": "6073436114963@lid",
+      "coins": 27,
+      "exp": 0,
+      "level": 1,
+      "lastActive": 1751016530547,
+      "commandCount": 0,
+      "lastDailyReward": null,
+      "joinDate": 1751016530545
+    },
+    "867051314767696@bot": {
+      "id": "867051314767696@bot",
+      "coins": 0,
+      "exp": 1,
+      "level": 1,
+      "lastActive": 1751019770154,
+      "commandCount": 0,
+      "lastDailyReward": null,
+      "joinDate": 1751019770152,
+      "messageCount": 1
+    },
+    "120363402755087708@g.us": {
+      "id": "120363402755087708@g.us",
+      "coins": 0,
+      "exp": 2,
+      "level": 1,
+      "lastActive": 1751036171300,
+      "commandCount": 0,
+      "lastDailyReward": null,
+      "joinDate": 1751036171173,
+      "messageCount": 1
+    },
+    "8801723153138@s.whatsapp.net": {
+      "id": "8801723153138@s.whatsapp.net",
+      "name": "",
+      "coins": 0,
+      "exp": 67,
+      "level": 1,
+      "lastActive": 1757536937571,
+      "commandCount": 175,
+      "lastDailyReward": null,
+      "joinDate": 1756585659091,
+      "messageCount": 30,
+      "money": 7262
+    },
+    "276231392129258@lid": {
+      "id": "276231392129258@lid",
+      "name": "",
+      "coins": 0,
+      "exp": 30,
+      "level": 1,
+      "lastActive": 1756589400790,
+      "commandCount": 0,
+      "lastDailyReward": null,
+      "joinDate": 1756587024448,
+      "messageCount": 14
+    },
+    "undefined": {
+      "name": "",
+      "coins": 1727,
+      "exp": 86,
+      "level": 1,
+      "lastActive": 1757536767471,
+      "commandCount": 0,
+      "lastDailyReward": "2025-09-11",
+      "joinDate": 1756590505477
+    }
+  },
+  "groups": {
+    "120363402755087708@g.us": {
+      "id": "120363402755087708@g.us",
+      "settings": {
+        "welcomeDisabled": false,
+        "welcomeMessage": null,
+        "goodbyeDisabled": false
+      },
+      "commandCount": 0,
+      "members": []
+    },
+    "120363420613539104@g.us": {
+      "id": "120363420613539104@g.us",
+      "settings": {
+        "welcomeDisabled": false,
+        "welcomeMessage": null,
+        "goodbyeDisabled": false
+      },
+      "commandCount": 0,
+      "members": []
+    },
+    "120363401875134209@g.us": {
+      "id": "120363401875134209@g.us",
+      "settings": {
+        "welcomeDisabled": false,
+        "welcomeMessage": null,
+        "goodbyeDisabled": false
+      },
+      "commandCount": 0,
+      "members": []
+    },
+    "120363402029632231@g.us": {
+      "id": "120363402029632231@g.us",
+      "settings": {
+        "welcomeDisabled": false,
+        "welcomeMessage": null,
+        "goodbyeDisabled": false
+      },
+      "commandCount": 0,
+      "members": []
+    }
+  },
+  "settings": {}
+}

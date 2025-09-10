@@ -1,0 +1,72 @@
+{
+  "whatsapp": {
+    "clientId": "whatsapp-bot",
+    "headless": true,
+    "dataPath": "./auth_data"
+  },
+  "bot": {
+    "prefix": "!",
+    "name": "DoraBot",
+    "defaultLang": "en",
+    "timezone": "Asia/Dhaka",
+    "enableWordTriggers": true,
+    "enableOnReply": true
+  },
+  "adminBot": [
+    "",
+    "60734361149638@lid",
+    "8801723153138@s.whatsapp.net"
+  ],
+  "adminOnly": false,
+  "whiteListMode": {
+    "enabled": true,
+    "whiteListIds": ["8801723153138@s.whatsapp.net"]
+  },
+  "database": {
+    "type": "json",
+    "uri": "mongodb+srv://m:ttnRAhj81Jik@cluster0.zwknjau.mongodb.net/GoatBotV2?retryWrites=true&w=majority&appName=Cluster0",
+    "path": "./data/database.json",
+    "autoSync": true
+  },
+  "dashBoard": {
+    "enabled": true,
+    "port": 3001
+  },
+  "autoRestart": {
+    "enabled": true,
+    "schedule": "0 2 * * *",
+    "delay": 5000
+  },
+  "autoUptime": {
+    "enabled": true,
+    "interval": 3600000
+  },
+  "hideNotiMessage": {
+    "commandNotFound": false,
+    "onlyAdminUse": false,
+    "threadNotAllowed": false,
+    "userNotAllowed": false
+  },
+  "logEvents": {
+    "disableAll": false,
+    "message": true,
+    "reaction": true,
+    "join": true,
+    "leave": true
+  },
+  "ai": {
+    "openai": {
+      "apiKey": "your-openai-api-key",
+      "model": "gpt-3.5-turbo"
+    }
+  },
+  "rateLimiting": {
+    "enabled": true,
+    "maxRequests": 25,
+    "windowMs": 60000,
+    "minDelay": 1200,
+    "maxDelay": 10000,
+    "enableRetry": true,
+    "maxRetries": 3
+  }
+}

@@ -1,0 +1,52 @@
+[
+  {
+    "id": "TC001",
+    "title": "test whatsapp connection and qr code generation",
+    "description": "Verify that the /connect POST endpoint successfully establishes a WhatsApp connection and returns a valid QR code for authentication."
+  },
+  {
+    "id": "TC002",
+    "title": "test dynamic command module loading",
+    "description": "Verify that the /commands/load POST endpoint dynamically loads a command module and responds with success status."
+  },
+  {
+    "id": "TC003",
+    "title": "test dynamic command module unloading",
+    "description": "Verify that the /commands/unload POST endpoint unloads a specified command module and responds with success status."
+  },
+  {
+    "id": "TC004",
+    "title": "test bot responsiveness ping endpoint",
+    "description": "Verify that the /ping GET endpoint returns a pong response with latency information indicating the bot is responsive."
+  },
+  {
+    "id": "TC005",
+    "title": "test text translation functionality",
+    "description": "Verify that the /translate POST endpoint correctly translates input text between specified languages and returns the translated text."
+  },
+  {
+    "id": "TC006",
+    "title": "test weather information retrieval",
+    "description": "Verify that the /weather GET endpoint returns accurate weather forecast information for a specified location."
+  },
+  {
+    "id": "TC007",
+    "title": "test admin privilege addition",
+    "description": "Verify that the /admin/add POST endpoint grants admin privileges to a specified user and returns confirmation."
+  },
+  {
+    "id": "TC008",
+    "title": "test admin privilege removal",
+    "description": "Verify that the /admin/remove POST endpoint revokes admin privileges from a specified user and returns confirmation."
+  },
+  {
+    "id": "TC009",
+    "title": "test rock paper scissors game play",
+    "description": "Verify that the /games/rps POST endpoint allows a user to play rock paper scissors with the bot and returns the game result."
+  },
+  {
+    "id": "TC010",
+    "title": "test quiz game session start",
+    "description": "Verify that the /games/quiz GET endpoint starts a quiz game session and returns the initial quiz question or game state."
+  }
+]

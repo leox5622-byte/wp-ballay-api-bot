@@ -1,0 +1,11 @@
+{
+  "commandUnload": [
+    "all.js",
+    "cat.js",
+    "pair.js"
+  ],
+  "commandEventUnload": [],
+  "envCommands": {},
+  "envEvents": {},
+  "envGlobal": {}
+}
