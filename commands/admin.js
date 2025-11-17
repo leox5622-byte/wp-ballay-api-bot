@@ -11,7 +11,7 @@ module.exports = {
         name: "admin",
         aliases: [""],
         version: "1.0",
-        author: "XXR3XX,
+        author: "XXR3XX",
         coolDown: 5,
         role: 2,
         description: "Add, remove, or list bot admin roles (works in groups)",
