@@ -7,7 +7,7 @@ module.exports = {
     config: {
         name: "gemini",
         version: "1.0.0",
-        author: "", // Replace with your name
+        author: "Rl", 
         coolDown: 5,
         role: 0,
         description: "Chat with Gemini AI",
