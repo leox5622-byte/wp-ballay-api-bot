@@ -40,7 +40,10 @@ class WebDashboard {
                 res.json({ error: 'No data available' });
             }
         });
-    }
+   // Health check route for UptimeRobot
+this.app.get('/health', (req, res) => {
+    res.status(200).send('Bot is alive');
+}); }
 
     setupSocketIO() {
         this.io.on('connection', (socket) => {
