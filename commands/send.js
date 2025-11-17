@@ -15,7 +15,7 @@ module.exports = {
         }
     },
 
-    onStart: async function ({ message, args, client }) {
+    onStart: async function({ message, args, client, prefix, config, chat, contact }) {
         try {
             const mentions = message.mentionedIds || [];
             const senderId = message.author || message.from;

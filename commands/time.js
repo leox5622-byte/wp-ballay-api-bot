@@ -9,33 +9,38 @@ module.exports = {
     guide: "{pn}: Show current date and time"
   },
 
-  onStart: async function({ message, client }) {
-    const now = new Date();
-    const timeString = now.toLocaleString("en-US", {
-      hour12: true,
-      weekday: "short",
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-      timeZoneName: "short"
-    });
+  onStart: async function({ message, args, client, prefix, config, chat, contact }) {
+    try {
+      const now = new Date();
+      const timeString = now.toLocaleString("en-US", {
+        hour12: true,
+        weekday: "short",
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        timeZoneName: "short",
+      });
 
-    let responseText = `🕒 Current time:\n${timeString}`;
-    let mentions = [];
+      let responseText = `🕒 Current time:\n${timeString}`;
+      let mentions = [];
 
-    if (message.hasQuotedMsg) {
-      const quotedMsg = await message.getQuotedMessage();
-      // Use author (group message sender) or from (private chat sender)
-      const originalSender = quotedMsg.author || quotedMsg.from;
-      if (originalSender) {
-        mentions.push(originalSender);
-        responseText = `@${originalSender.split("@")[0]} ${responseText}`;
+      if (message.hasQuotedMsg) {
+        const quotedMsg = await message.getQuotedMessage();
+        // Use author (group message sender) or from (private chat sender)
+        const originalSender = quotedMsg.author || quotedMsg.from;
+        if (originalSender) {
+          mentions.push(originalSender);
+          responseText = `@${originalSender.split("@")[0]} ${responseText}`;
+        }
       }
-    }
 
-    await client.sendMessage(message.from, { text: responseText, mentions });
-  }
+      await client.sendMessage(message.from, { text: responseText, mentions });
+    } catch (error) {
+      console.error(`Error in ${this.config.name}:`, error);
+      await message.reply('❌ An error occurred while executing this command.');
+    }
+  },
 };

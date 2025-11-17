@@ -13,7 +13,7 @@ module.exports = {
     guide: "{pn} [setting] [value]\n\nSettings:\n• welcome [on/off] - Toggle welcome messages\n• adminonly [on/off] - Admin only mode\n• info - Show thread information"
   },
   
-  onStart: async function ({ message, args, client }) {
+  onStart: async function({ message, args, client, prefix, config, chat, contact }) {
     try {
       const threadId = message?.key?.remoteJid || message?.from || message?.chatId;
       if (!threadId || !threadId.endsWith('@g.us')) {

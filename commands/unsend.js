@@ -3,7 +3,7 @@ module.exports = {
     name: "unsend",
     aliases: ["uns", "r", "unsent", "u"],
     version: "2.0",
-    author: "NTKhang (adapted for Baileys by RL)",
+    author: "RL)",
     coolDown: 5,
     role: 0,
     category: "utility",
@@ -27,34 +27,30 @@ module.exports = {
     const L = this.langs.en; // Fallback to English
 
     try {
-      // Extract quoted message info from Baileys context
-      const ctx = message.message?.extendedTextMessage?.contextInfo;
-      const stanzaId = ctx?.stanzaId || ctx?.stanzaID || ctx?.stanzaid; // handle possible variants
-      const participant = ctx?.participant; // quoted sender in groups
-      const remoteJid = message.from;
-
-      if (!stanzaId) {
+      if (!message.hasQuotedMsg) {
         return await message.reply(L.syntaxError);
       }
 
-      // Determine if quoted message belongs to the bot (best-effort)
-      const botId = client?.sock?.user?.id;
-      const isQuotedFromBot = participant
-        ? (participant === botId || participant?.split(':')[0] === botId?.split(':')[0])
-        : true; // in 1:1 chats participant may be undefined; attempt delete with fromMe=true
+      const quotedMsg = await message.getQuotedMessage();
 
-      if (!isQuotedFromBot && isGroup) {
-        // In groups we can reliably check participant; block early if not from bot
+      if (!quotedMsg || !quotedMsg.fromMe) {
         return await message.reply(L.notBotMsg);
       }
 
-      // Build delete key and attempt unsend
+      const stanzaId = quotedMsg.id._serialized; // Use the serialized ID of the quoted message
+      const remoteJid = message.from; // The chat where the unsend command was issued
+
+      // Build delete key
       const deleteKey = { remoteJid, id: stanzaId, fromMe: true };
-      if (participant) deleteKey.participant = participant;
+      // If it's a group, the participant field might be needed for the delete key
+      // The quoted message's sender (the bot) is the participant for the delete operation
+      if (isGroup && client?.sock?.user?.id) {
+        deleteKey.participant = client.sock.user.id;
+      }
 
       await client.sock.sendMessage(remoteJid, { delete: deleteKey });
     } catch (err) {
-      // If deletion fails, most likely it wasn't the bot's message
+      // If deletion fails, most likely it wasn't the bot's message or other error
       const msg = (err?.message || "").toLowerCase();
       if (msg.includes("not-authorized") || msg.includes("revoke") || msg.includes("not from me")) {
         return await message.reply(this.langs.en.notBotMsg);

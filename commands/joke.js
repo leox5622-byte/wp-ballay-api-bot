@@ -23,7 +23,7 @@ module.exports = {
     longDescription: "Fetches and sends a random programming joke to lighten the mood"
   },
 
-  onStart: async function ({ message, client }) {
+  onStart: async function({ message, args, client, prefix, config, chat, contact }) {
     const joke = jokes[Math.floor(Math.random() * jokes.length)];
     let responseText = `😂 ${joke}`;
     const mentions = [];

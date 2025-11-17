@@ -15,7 +15,16 @@ module.exports = {
 		}
 	},
 
-	onStart: async function ({ message, event }) {
-		message.reply(event.threadID.toString());
-	}
+	onStart: async function ({ message, chat }) {
+	   try {
+		if (chat && chat.id && chat.id._serialized) {
+			message.reply(chat.id._serialized.toString());
+		} else {
+			message.reply("Unable to retrieve thread ID. The 'chat' object or its 'id' property is undefined.");
+		}
+	   } catch (error) {
+	     console.error(`Error in ${this.config.name}:`, error);
+	     await message.reply('❌ An error occurred while executing this command.');
+	   }
+	 }
 };

@@ -13,6 +13,7 @@ try {
     registerFont = null;
 }
 const path = require("path");
+const Canvas = require('canvas');
 
 // Register Bengali font with error handling
 try {

@@ -24,7 +24,7 @@ module.exports = {
     }
   },
 
-  onStart: async function ({ message, args, config, prefix }) {
+  onStart: async function({ message, args, client, prefix, config, chat, contact }) {
     try {
       const defaultLang = (config && config.bot && config.bot.defaultLang) || 'en';
 

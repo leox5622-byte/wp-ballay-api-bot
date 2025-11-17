@@ -10,6 +10,8 @@ class WebDashboard {
         this.server = http.createServer(this.app);
         this.io = socketIo(this.server);
         this.dataCallback = null;
+        this.currentQR = null; // Store current QR code
+        this.authData = null; // Store authentication data
     }
 
     initialize(dataCallback) {
@@ -42,7 +44,19 @@ class WebDashboard {
 
     setupSocketIO() {
         this.io.on('connection', (socket) => {
-            console.log('Dashboard client connected');
+            console.log('✅ Dashboard client connected');
+
+            // Send current QR code if available
+            if (this.currentQR) {
+                console.log('📱 Sending stored QR code to new connection');
+                socket.emit('qr', this.currentQR);
+            }
+
+            // Send current auth data if available
+            if (this.authData) {
+                console.log('✅ Sending authentication status to new connection');
+                socket.emit('authenticated', this.authData);
+            }
 
             // Send initial status
             this.sendStatus(socket);
@@ -75,21 +89,30 @@ class WebDashboard {
 
     // Methods to emit specific events from the bot
     emitQR(qrCodeDataURL) {
-        this.io.emit('qr', {
+        this.currentQR = {
             qrCode: qrCodeDataURL,
             message: 'Scan this QR code with WhatsApp to authenticate'
-        });
+        };
+        this.authData = null; // Clear auth data when new QR is generated
+        
+        console.log('📱 Broadcasting QR code to all connected clients');
+        this.io.emit('qr', this.currentQR);
     }
 
     emitAuthenticated(data) {
-        this.io.emit('authenticated', {
+        this.currentQR = null; // Clear QR code when authenticated
+        this.authData = {
             status: 'connected',
             user: data.user,
             message: data.message
-        });
+        };
+        
+        console.log('✅ Broadcasting authentication success to all clients');
+        this.io.emit('authenticated', this.authData);
     }
 
     emitAuthStatus(data) {
+        console.log(`📡 Broadcasting auth status: ${data.status}`);
         this.io.emit('auth_status', data);
     }
 
@@ -319,6 +342,18 @@ class WebDashboard {
             font-size: 0.9em;
         }
 
+        .connection-status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 0.9em;
+            z-index: 1000;
+        }
+
         /* Animations */
         @keyframes fadeInDown {
             from {
@@ -427,6 +462,10 @@ class WebDashboard {
     </style>
 </head>
 <body>
+    <div class="connection-status" id="connection-status">
+        🔴 Connecting to dashboard...
+    </div>
+
     <div class="container">
         <div class="header">
             <h1>🤖 WhatsApp Bot Dashboard</h1>
@@ -524,14 +563,33 @@ class WebDashboard {
         
         // Connection status
         socket.on('connect', () => {
-            console.log('Connected to dashboard server');
+            console.log('✅ Connected to dashboard server');
+            updateConnectionStatusBanner(true);
             updateConnectionStatus(true);
         });
 
         socket.on('disconnect', () => {
-            console.log('Disconnected from dashboard server');
+            console.log('❌ Disconnected from dashboard server');
+            updateConnectionStatusBanner(false);
             updateConnectionStatus(false);
         });
+
+        socket.on('connect_error', (error) => {
+            console.error('❌ Connection error:', error);
+            updateConnectionStatusBanner(false);
+        });
+
+        // Update connection status banner
+        function updateConnectionStatusBanner(isConnected) {
+            const banner = document.getElementById('connection-status');
+            if (isConnected) {
+                banner.innerHTML = '🟢 Connected to Dashboard';
+                banner.style.background = 'rgba(76, 175, 80, 0.9)';
+            } else {
+                banner.innerHTML = '🔴 Disconnected - Reconnecting...';
+                banner.style.background = 'rgba(244, 67, 54, 0.9)';
+            }
+        }
         
         // Function to update connection status in UI
         function updateConnectionStatus(isConnected) {
@@ -548,7 +606,7 @@ class WebDashboard {
 
         // Handle QR code display
         socket.on('qr', (data) => {
-            console.log('QR code received');
+            console.log('📱 QR code received');
             const qrSection = document.getElementById('qr-section');
             const qrDisplay = document.getElementById('qr-display');
             const authSection = document.getElementById('auth-section');
@@ -564,7 +622,7 @@ class WebDashboard {
 
         // Handle successful authentication
         socket.on('authenticated', (data) => {
-            console.log('Bot authenticated successfully');
+            console.log('✅ Bot authenticated successfully');
             const qrSection = document.getElementById('qr-section');
             const authSection = document.getElementById('auth-section');
             const authStatus = document.getElementById('auth-status');
@@ -586,7 +644,7 @@ class WebDashboard {
 
         // Handle authentication status updates
         socket.on('auth_status', (data) => {
-            console.log('Auth status update:', data.status);
+            console.log('📡 Auth status update:', data.status);
             const authSection = document.getElementById('auth-section');
             const authStatus = document.getElementById('auth-status');
             
@@ -667,6 +725,9 @@ class WebDashboard {
                 }
             }
         }
+
+        // Log when page is loaded
+        console.log('📊 Dashboard loaded and waiting for data...');
     </script>
 </body>
 </html>

@@ -23,7 +23,7 @@ module.exports = {
         guide: "jail @mention or reply to someone"
     },
 
-    onStart: async function ({ message, client }) {
+    onStart: async function({ message, args, client, prefix, config, chat, contact }) {
         if (!DIG) {
             return await message.reply("❌ This command is currently unavailable due to missing dependencies. Please contact the bot administrator.");
         }

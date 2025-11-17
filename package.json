@@ -4,7 +4,9 @@
   "description": "Advanced WhatsApp Bot with modular architecture",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
+    "start": "node start.js",
+    "start:direct": "node --max-old-space-size=1024 index.js",
+    "start:fast": "node start.js --direct",
     "dev": "nodemon index.js",
     "dashboard": "node tmp/run-dashboard.js",
     "dashboard:dev": "nodemon tmp/run-dashboard.js",

@@ -10,7 +10,7 @@ const path = require('path');
 const config = require('./config.json');
 const { loadCommands } = require('./scripts/cmdloadder');
 const { loadEvents } = require('./scripts/eventsIndex');
-const { initDatabase, log, formatUptime, trackCommand } = require('./scripts/helpers');
+const { initDatabase, log, formatUptime, trackCommand, normalizeJid } = require('./scripts/helpers');
 const RateLimiter = require('./scripts/rateLimiter');
 const WebDashboard = require('./dashboard/WebDashboard'); // Import web dashboard
 const BaileysCompat = require('./scripts/baileysCompat');
@@ -97,6 +97,9 @@ class WhatsAppBot {
         this.sock = null;
         this.authState = null;
         this.saveCreds = null;
+        this.spinner = null;
+        this.ora = null;
+        this.initStartTime = Date.now();
         
         // Initialize rate limiter
         const rateLimitConfig = this.config.rateLimiting || {};
@@ -155,38 +158,102 @@ class WhatsAppBot {
         this.logger = P({ level: 'silent' });
         this.compat = null; // Will be initialized after socket creation
 
+        // Setup dashboard first so it's ready to receive QR code
         this.setupDashboard();
         this.setupAutoTasks();
     }
 
     async initialize() {
         try {
-            log('🚀 Starting WhatsApp Bot V2 with Baileys...', 'info');
+            const { default: ora } = await import('ora');
+            this.ora = ora;
+
+            this.showProgress('🚀 Starting WhatsApp Bot V2...', 0);
             
             // Initialize database
+            this.showProgress('💾 Initializing database...', 20);
             await initDatabase();
             
-            // Load commands and events
-            await this.loadCommands();
-            await this.loadEvents();
+            // Load commands and events in parallel
+            this.showProgress('📋 Loading commands and events...', 40);
+            const [commandsResult, eventsResult] = await Promise.all([
+                this.loadCommands(),
+                this.loadEvents()
+            ]);
             
             // Initialize Baileys auth state
+            this.showProgress('🔐 Setting up authentication...', 60);
             const { state, saveCreds } = await useMultiFileAuthState('./auth_info');
             this.authState = state;
             this.saveCreds = saveCreds;
             
             // Get latest Baileys version
+            this.showProgress('📡 Fetching Baileys version...', 70);
             const { version, isLatest } = await fetchLatestBaileysVersion();
             log(`Using Baileys v${version.join('.')}, isLatest: ${isLatest}`, 'info');
             
             // Create Baileys socket
+            this.showProgress('🔌 Creating WhatsApp connection...', 80);
             await this.createSocket();
             
-            log('✅ Bot initialized successfully!', 'success');
+            this.showProgress('⚙️ Finalizing setup...', 90);
+            
+            const initTime = Date.now() - this.initStartTime;
+            this.showProgress(`✅ Bot initialized in ${(initTime/1000).toFixed(1)}s!`, 100, true);
+            
+            setTimeout(() => this.showStartupSummary(initTime), 500);
         } catch (error) {
-            log(`❌ Failed to initialize bot: ${error.message}`, 'error');
+            if (this.spinner) {
+                this.spinner.fail(`❌ Failed to initialize: ${error.message}`);
+            } else {
+                log(`❌ Failed to initialize bot: ${error.message}`, 'error');
+            }
             process.exit(1);
         }
+    }
+
+    showProgress(message, percentage, isComplete = false) {
+        if (process.stdout.isTTY && !this.spinner) {
+            if (!this.ora) {
+                log(message, 'info');
+                return;
+            }
+            this.spinner = this.ora({
+                text: message,
+                spinner: 'dots2',
+                color: 'cyan'
+            }).start();
+        } else if (this.spinner) {
+            if (isComplete) {
+                this.spinner.succeed(message);
+                this.spinner = null;
+            } else {
+                this.spinner.text = `${message} [${percentage}%]`;
+            }
+        } else {
+            log(message, isComplete ? 'success' : 'info');
+        }
+    }
+
+    showStartupSummary(initTime) {
+        console.log('\n' + '='.repeat(55));
+        console.log('🎉 WhatsApp Bot V2 - Ready to Serve!');
+        console.log('='.repeat(55));
+        console.log(`⚡ Startup Time: ${(initTime/1000).toFixed(2)} seconds`);
+        console.log(`📋 Commands: ${this.commands.size} loaded`);
+        console.log(`🎯 Events: ${this.events.size} loaded`);
+        console.log(`👑 Admins: ${this.config.adminBot.length} configured`);
+        console.log(`🔧 Prefix: "${this.config.bot.prefix}"`);
+        
+        if (this.config.dashBoard.enabled) {
+            console.log(`📊 Dashboard: http://localhost:${this.config.dashBoard.port || 3000}`);
+        }
+        
+        console.log(`💾 Database: ${this.config.database.type.toUpperCase()}`);
+        console.log('='.repeat(55));
+        console.log('✅ Bot is ready for messages!');
+        console.log('💡 Send "!help" to see available commands');
+        console.log('='.repeat(55) + '\n');
     }
 
     async createSocket() {
@@ -250,8 +317,14 @@ class WhatsAppBot {
                     this.isAuthenticated = false;
                 }
             } else if (connection === 'open') {
-                log('🎉 WhatsApp Bot is ready!', 'success');
-                log(`📞 Connected as: ${this.sock.user?.id}`, 'info');
+                const connectedUser = this.sock.user?.id || 'Unknown';
+                log(`🎉 Connected as: ${connectedUser}`, 'success');
+                
+                console.log('\n' + '✅'.repeat(20));
+                console.log('🟢 STATUS: ONLINE AND READY');
+                console.log(`📱 WhatsApp: ${connectedUser}`);
+                console.log('🤖 Bot: Fully Operational');
+                console.log('✅'.repeat(20) + '\n');
                 
                 this.isAuthenticated = true;
                 this.qrCode = null;
@@ -259,7 +332,7 @@ class WhatsAppBot {
                 // Emit authentication status to web dashboard
                 if (this.webDashboard) {
                     this.webDashboard.emitAuthenticated({
-                        user: this.sock.user?.id,
+                        user: connectedUser,
                         message: 'Bot is now connected and ready!'
                     });
                 }
@@ -515,31 +588,24 @@ class WhatsAppBot {
             // Enforce whitelist globally (silent) for any incoming message before any handling
             const wl = this.config.whiteListMode || {};
             if (wl.enabled) {
-                const list = Array.isArray(wl.whiteListIds) ? wl.whiteListIds : [];
-                const getBare = (id) => {
-                    if (!id) return '';
-                    const user = String(id).split('@')[0];
-                    return user.replace(/\D/g, '');
-                };
-                const normalizePair = (id) => id.includes('@s.whatsapp.net')
-                    ? [id, id.replace('@s.whatsapp.net', '@c.us')]
-                    : id.includes('@c.us')
-                        ? [id, id.replace('@c.us', '@s.whatsapp.net')]
-                        : [id];
-                const inWhiteList = (id) => {
-                    const pairs = normalizePair(id);
-                    const bare = getBare(id);
-                    return pairs.some(x => list.includes(x)) || list.some(e => getBare(e) && getBare(e) === bare);
+                const whiteListUserIds = Array.isArray(wl.whiteListIds) ? wl.whiteListIds : [];
+                const whiteListedGroups = Array.isArray(wl.whiteListedGroups) ? wl.whiteListedGroups : [];
+
+                // Removed local getBare and normalizePair, using global normalizeJid
+                const inWhiteListUser = (id) => {
+                    const normalizedId = normalizeJid(id);
+                    return whiteListUserIds.some(whiteListId => normalizeJid(whiteListId) === normalizedId);
                 };
                 const ownerList = Array.isArray(this.config.adminBot) ? this.config.adminBot : [];
                 const isOwner = (() => {
                     const uid = contact.id._serialized;
-                    const pairs = normalizePair(uid);
-                    const bare = getBare(uid);
-                    return pairs.some(x => ownerList.includes(x)) || ownerList.some(e => getBare(e) && getBare(e) === bare);
+                    const normalizedUid = normalizeJid(uid);
+                    return ownerList.some(adminId => normalizeJid(adminId) === normalizedUid);
                 })();
-                const allowedByGroup = isGroup ? list.includes(chat.id._serialized) : false; // group must match exactly
-                const allowedByUser = inWhiteList(contact.id._serialized);
+
+                const allowedByGroup = isGroup ? whiteListedGroups.some(groupId => normalizeJid(groupId) === normalizeJid(chat.id._serialized)) : false;
+                const allowedByUser = inWhiteListUser(contact.id._serialized);
+
                 if (!(isOwner || allowedByUser || allowedByGroup)) {
                     // Silent drop: do not process events, onChat, commands, or send notifications
                     return;
@@ -664,13 +730,24 @@ class WhatsAppBot {
                 const senderId = message.key.participant || message.key.remoteJid;
                 const wl = this.config.whiteListMode || {};
                 if (wl.enabled) {
-                    const list = Array.isArray(wl.whiteListIds) ? wl.whiteListIds : [];
-                    const normalizePair = (id) => id.includes('@s.whatsapp.net') ? [id, id.replace('@s.whatsapp.net', '@c.us')] : id.includes('@c.us') ? [id, id.replace('@c.us', '@s.whatsapp.net')] : [id];
-                    const inList = (id) => normalizePair(id).some(x => list.includes(x));
+                    const whiteListUserIds = Array.isArray(wl.whiteListIds) ? wl.whiteListIds : [];
+                    const whiteListedGroups = Array.isArray(wl.whiteListedGroups) ? wl.whiteListedGroups : [];
+
+                    // Removed local getBare and normalizePair, using global normalizeJid
+                    const inWhiteListUser = (id) => {
+                        const normalizedId = normalizeJid(id);
+                        return whiteListUserIds.some(whiteListId => normalizeJid(whiteListId) === normalizedId);
+                    };
                     const ownerList = Array.isArray(this.config.adminBot) ? this.config.adminBot : [];
-                    const isOwner = normalizePair(senderId).some(x => ownerList.includes(x));
-                    const allowedByGroup = isGroup ? inList(chatId) : false;
-                    const allowedByUser = inList(senderId);
+                    const isOwner = (() => {
+                        const uid = senderId;
+                        const normalizedUid = normalizeJid(uid);
+                        return ownerList.some(adminId => normalizeJid(adminId) === normalizedUid);
+                    })();
+
+                    const allowedByGroup = isGroup ? whiteListedGroups.some(groupId => normalizeJid(groupId) === normalizeJid(chatId)) : false;
+                    const allowedByUser = inWhiteListUser(senderId);
+
                     if (!(isOwner || allowedByUser || allowedByGroup)) {
                         return; // silent
                     }
@@ -688,30 +765,23 @@ class WhatsAppBot {
         if (wl.enabled) {
             const userId = contact?.id?._serialized || '';
             const chatId = chat?.id?._serialized || '';
-            const list = Array.isArray(wl.whiteListIds) ? wl.whiteListIds : [];
-            const getBare = (id) => {
-                if (!id) return '';
-                const user = String(id).split('@')[0];
-                return user.replace(/\D/g, '');
-            };
-            const normalizePair = (id) => id.includes('@s.whatsapp.net')
-                ? [id, id.replace('@s.whatsapp.net', '@c.us')]
-                : id.includes('@c.us')
-                    ? [id, id.replace('@c.us', '@s.whatsapp.net')]
-                    : [id];
-            const inWhiteList = (id) => {
-                const pairs = normalizePair(id);
-                const bare = getBare(id);
-                return pairs.some(x => list.includes(x)) || list.some(e => getBare(e) && getBare(e) === bare);
+            const whiteListUserIds = Array.isArray(wl.whiteListIds) ? wl.whiteListIds : [];
+            const whiteListedGroups = Array.isArray(wl.whiteListedGroups) ? wl.whiteListedGroups : [];
+
+            // Removed local getBare and normalizePair, using global normalizeJid
+            const inWhiteListUser = (id) => {
+                const normalizedId = normalizeJid(id);
+                return whiteListUserIds.some(whiteListId => normalizeJid(whiteListId) === normalizedId);
             };
             const ownerList = Array.isArray(this.config.adminBot) ? this.config.adminBot : [];
             const isOwner = (() => {
-                const pairs = normalizePair(userId);
-                const bare = getBare(userId);
-                return pairs.some(x => ownerList.includes(x)) || ownerList.some(e => getBare(e) && getBare(e) === bare);
+                const normalizedUserId = normalizeJid(userId);
+                return ownerList.some(adminId => normalizeJid(adminId) === normalizedUserId);
             })();
-            const allowedByGroup = isGroup ? list.includes(chatId) : false; // group must match exactly
-            const allowedByUser = inWhiteList(userId);
+
+            const allowedByGroup = isGroup ? whiteListedGroups.some(groupId => normalizeJid(groupId) === normalizeJid(chatId)) : false;
+            const allowedByUser = inWhiteListUser(userId);
+
             if (!(isOwner || allowedByUser || allowedByGroup)) {
                 // Silent block when whitelist mode is enabled
                 return false;
@@ -750,50 +820,108 @@ class WhatsAppBot {
     async getUserRole(contact, chat, isGroup) {
         try {
             const userId = contact?.id?._serialized || '';
+            
+            if (!userId) {
+                log('Warning: No userId provided to getUserRole', 'warning');
+                return 0;
+            }
 
-            // Check if bot owner (support both @s.whatsapp.net and @c.us formats)
-            const altIds = [];
-            if (userId.includes('@s.whatsapp.net')) altIds.push(userId.replace('@s.whatsapp.net', '@c.us'));
-            if (userId.includes('@c.us')) altIds.push(userId.replace('@c.us', '@s.whatsapp.net'));
-            const isOwner = [userId, ...altIds].some(id => this.config.adminBot.includes(id));
-            if (isOwner) return 2;
+            // Normalize the user ID for consistent comparison
+            const normalizedUserId = normalizeJid(userId);
+            
+            // Check if bot owner (highest priority)
+            const isOwner = this.config.adminBot.some(adminId => {
+                const normalizedAdminId = normalizeJid(adminId);
+                return normalizedAdminId === normalizedUserId;
+            });
+            
+            if (isOwner) {
+                log(`User ${normalizedUserId} identified as Bot Owner`, 'info');
+                return 2; // Bot Owner
+            }
 
-            // Check if group admin
+            // Check if group admin (only in group context)
             if (isGroup) {
-                let participants = Array.isArray(chat?.participants) ? chat.participants : null;
-
-                // Fallback: fetch group metadata if participants are not available on chat object
-                if (!participants) {
-                    try {
-                        const groupId = chat?.id?._serialized || '';
-                        let meta = null;
-                        if (this.compat && typeof this.compat.getGroupMetadata === 'function') {
-                            meta = await this.compat.getGroupMetadata(groupId);
-                        } else if (this.sock && typeof this.sock.groupMetadata === 'function') {
-                            meta = await this.sock.groupMetadata(groupId);
-                        }
-                        participants = Array.isArray(meta?.participants) ? meta.participants : [];
-                    } catch (e) {
-                        participants = [];
+                try {
+                    const groupId = chat?.id?._serialized || '';
+                    
+                    if (!groupId) {
+                        log('Warning: No groupId available for group admin check', 'warning');
+                        return 0;
                     }
-                }
 
-                // Find matching participant and determine admin status across shapes
-                const participant = participants.find(p => {
-                    const pid = typeof p.id === 'string' ? p.id : p.id?._serialized;
-                    return pid === userId;
-                });
+                    // Check cache first to avoid repeated API calls
+                    let meta = this.groupCache.get(groupId);
+                    
+                    if (!meta) {
+                        log(`Fetching group metadata for ${groupId}`, 'info');
+                        meta = await this.sock.groupMetadata(groupId);
+                        
+                        // Cache the metadata for 5 minutes
+                        this.groupCache.set(groupId, meta, 300);
+                    }
 
-                if (participant) {
-                    const isAdmin = participant.isAdmin === true || participant.isSuperAdmin === true || participant.admin === 'admin' || participant.admin === 'superadmin';
-                    if (isAdmin) return 1;
+                    if (!meta || !meta.participants) {
+                        log(`Warning: No participants found in group metadata for ${groupId}`, 'warning');
+                        return 0;
+                    }
+
+                    // Find the participant in the group
+                    const participant = meta.participants.find(p => {
+                        // Handle different participant ID formats
+                        let pid = p.id;
+                        
+                        if (typeof pid === 'object') {
+                            pid = pid._serialized || pid.user || pid;
+                        }
+                        
+                        if (typeof pid === 'string') {
+                            return normalizeJid(pid) === normalizedUserId;
+                        }
+                        
+                        return false;
+                    });
+
+                    if (participant) {
+                        // Check admin status
+                        const adminStatus = participant.admin;
+                        const isGroupAdmin = ['admin', 'superadmin'].includes(adminStatus);
+                        
+                        if (isGroupAdmin) {
+                            log(`User ${normalizedUserId} identified as Group Admin in ${groupId}`, 'info');
+                            return 1; // Group Admin
+                        } else {
+                            log(`User ${normalizedUserId} found in group but not admin (status: ${adminStatus})`, 'info');
+                        }
+                    } else {
+                        log(`User ${normalizedUserId} not found in group ${groupId} participants`, 'warning');
+                    }
+                    
+                } catch (groupError) {
+                    log(`Error fetching group metadata: ${groupError.message}`, 'error');
+                    
+                    // Fallback: try to get participants from chat object
+                    if (chat && Array.isArray(chat.participants)) {
+                        const participant = chat.participants.find(p => {
+                            const pid = typeof p.id === 'string' ? p.id : p.id?._serialized;
+                            return normalizeJid(pid) === normalizedUserId;
+                        });
+                        
+                        if (participant && ['admin', 'superadmin'].includes(participant.admin)) {
+                            log(`User ${normalizedUserId} identified as Group Admin (fallback method)`, 'info');
+                            return 1;
+                        }
+                    }
                 }
             }
 
+            // Default to regular user
+            log(`User ${normalizedUserId} identified as Regular User`, 'info');
             return 0; // Regular user
+            
         } catch (error) {
-            // In case of any unexpected structure, default to regular user
-            return 0;
+            log(`Error in getUserRole for user ${contact?.id?._serialized}: ${error.message}`, 'error');
+            return 0; // Default to regular user on error
         }
     }
 
@@ -813,72 +941,38 @@ class WhatsAppBot {
     }
 
     async loadCommands() {
+        const startTime = Date.now();
         const commands = await loadCommands();
         this.commands = commands;
+        const loadTime = Date.now() - startTime;
         
-        // Optimize command loading with parallel processing
-        const commandEntries = Array.from(commands.entries());
-        const loadPromises = commandEntries.map(async ([name, command]) => {
-            try {
-                // Pre-validate command structure
-                if (command && command.config && command.onStart) {
-                    return { name, status: 'success' };
-                } else {
-                    return { name, status: 'warning', message: 'Invalid command structure' };
-                }
-            } catch (error) {
-                return { name, status: 'error', message: error.message };
-            }
-        });
-        
-        const loadResults = await Promise.allSettled(loadPromises);
-        let successCount = 0;
-        loadResults.forEach(result => {
-            if (result.status === 'fulfilled' && result.value.status === 'success') {
-                successCount++;
-            }
-        });
-        
-        log(`📋 Loaded ${successCount}/${commands.size} commands successfully`, 'info');
+        log(`📋 Loaded ${commands.size} commands in ${loadTime}ms`, 'info');
+        return commands.size;
     }
 
     async loadEvents() {
+        const startTime = Date.now();
         const events = await loadEvents();
         this.events = events;
+        const loadTime = Date.now() - startTime;
         
-        // Optimize event loading with parallel processing
-        const eventEntries = Array.from(events.entries());
-        const loadPromises = eventEntries.map(async ([name, event]) => {
-            try {
-                // Pre-validate event structure
-                if (event && event.execute && typeof event.execute === 'function') {
-                    return { name, status: 'success' };
-                } else {
-                    return { name, status: 'warning', message: 'Invalid event structure' };
-                }
-            } catch (error) {
-                return { name, status: 'error', message: error.message };
-            }
-        });
-        
-        const loadResults = await Promise.allSettled(loadPromises);
-        let successCount = 0;
-        loadResults.forEach(result => {
-            if (result.status === 'fulfilled' && result.value.status === 'success') {
-                successCount++;
-            }
-        });
-        
-        log(`🎉 Loaded ${successCount}/${events.size} events successfully`, 'info');
+        log(`🎉 Loaded ${events.size} events in ${loadTime}ms`, 'info');
+        return events.size;
     }
 
     setupDashboard() {
         if (!this.config.dashBoard.enabled) return;
 
-        this.webDashboard = new WebDashboard(this.config.dashBoard.port || 3000);
-        this.webDashboard.initialize(() => this.getDashboardData());
-        
-        log(`📊 Dashboard available at http://localhost:${this.config.dashBoard.port || 3000}`, 'info');
+        try {
+            this.webDashboard = new WebDashboard(this.config.dashBoard.port || 3000);
+            this.webDashboard.initialize(() => this.getDashboardData());
+            
+            log(`📊 Dashboard available at http://localhost:${this.config.dashBoard.port || 3000}`, 'info');
+            log(`📱 Open your browser to see QR code for WhatsApp authentication`, 'info');
+        } catch (error) {
+            log(`⚠️ Failed to setup dashboard: ${error.message}`, 'warning');
+            this.webDashboard = null;
+        }
     }
 
     setupAutoTasks() {
@@ -919,7 +1013,7 @@ class WhatsAppBot {
         try {
             const restartCommand = this.commands.get('restart');
             if (restartCommand && typeof restartCommand.checkRestart === 'function') {
-                await restartCommand.checkRestart(this.client);
+                await restartCommand.checkRestart(this.compat);
             }
         } catch (error) {
             log(`⚠️ Error checking restart notification: ${error.message}`, 'warning');

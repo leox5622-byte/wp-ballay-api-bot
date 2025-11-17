@@ -1,5 +1,5 @@
-const axios = require("axios");
 const { MessageMedia } = require('../scripts/messageMedia');
+const axios = require('axios');
 
 const mahmud = async () => {
   const base = await axios.get("https://raw.githubusercontent.com/mahmudx7/exe/main/baseApiUrl.json");
@@ -20,7 +20,7 @@ module.exports = {
         }
     },
 
-    onStart: async function ({ message, args, client }) {
+    onStart: async function({ message, args, client, prefix, config, chat, contact }) {
         if (args.length === 0) {
             return message.reply("❌ | Please provide a song name\n\nExample: sing mood lofi");
         }
@@ -34,7 +34,8 @@ module.exports = {
 
             const response = await axios.get(apiUrl, {
                 responseType: "stream",
-                headers: { "author": module.exports.config.author }
+                headers: { "author": module.exports.config.author },
+                timeout: 30000 // Increased timeout to 30 seconds
             });
 
             // Check if the response is successful
@@ -50,7 +51,7 @@ module.exports = {
                     const buffer = Buffer.concat(chunks);
                     const media = new MessageMedia('audio/mpeg', buffer.toString('base64'), `${args.join(" ")}.mp3`);
                     
-                    await client.sendMessage(message.from, media, {
+                    await message.reply(media, {
                         caption: `🎵 Here's your song: ${args.join(" ")}`
                     });
                 } catch (mediaError) {
@@ -70,7 +71,10 @@ module.exports = {
             if (error.response) {
                 console.error("Response error data:", error.response.data);
                 console.error("Response status:", error.response.status);
-                return message.reply(`${error.response.data.error || error.message}`);
+                if (error.response.status === 500) {
+                    return message.reply("❌ The song download service is currently unavailable. Please try again later.");
+                }
+                return message.reply(`❌ An error occurred: ${error.response.data.error || error.message}`);
             }
 
             message.reply("❌ An error occurred while processing your request. Please try again later.");

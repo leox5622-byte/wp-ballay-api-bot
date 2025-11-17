@@ -68,27 +68,32 @@ module.exports = {
 
   // Entry point for the command
   onStart: async function({ api, args, message }) {
-    if (args.length < 2) {
-      return message.reply("Usage: !morse <encode|decode> <message>");
+    try {
+      if (args.length < 2) {
+        return message.reply("Usage: !morse <encode|decode> <message>");
+      }
+
+      const action = args[0].toLowerCase();
+      const input = args.slice(1).join(' ').trim();
+
+      if (!input) {
+        return message.reply("Please provide a message to encode or decode.");
+      }
+
+      if (action === 'encode') {
+        const encoded = this.encode(input);
+        return message.reply(`Encoded: ${encoded}`);
+      }
+
+      if (action === 'decode') {
+        const decoded = this.decode(input);
+        return message.reply(`Decoded: ${decoded}`);
+      }
+
+      message.reply("Invalid action. Use 'encode' or 'decode'.");
+    } catch (error) {
+      console.error(`Error in ${this.config.name}:`, error);
+      await message.reply('❌ An error occurred while executing this command.');
     }
-
-    const action = args[0].toLowerCase();
-    const input = args.slice(1).join(' ').trim();
-
-    if (!input) {
-      return message.reply("Please provide a message to encode or decode.");
-    }
-
-    if (action === 'encode') {
-      const encoded = this.encode(input);
-      return message.reply(`Encoded: ${encoded}`);
-    }
-
-    if (action === 'decode') {
-      const decoded = this.decode(input);
-      return message.reply(`Decoded: ${decoded}`);
-    }
-
-    message.reply("Invalid action. Use 'encode' or 'decode'.");
   }
 };

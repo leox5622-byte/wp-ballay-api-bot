@@ -2,10 +2,29 @@ const { getUserData, updateUserData } = require('../scripts/helpers');
 
 function getSenderId(message) {
   if (!message) return null;
-  if (message.from.endsWith('@g.us')) {
+  
+  // Try multiple approaches to get sender ID
+  // 1. Check if message.sender exists (common pattern)
+  if (message.sender) {
+    return message.sender;
+  }
+  
+  // 2. For group messages, check author field
+  if (message.from && message.from.endsWith('@g.us')) {
     return message.author || null;
   }
-  return message.from || null;
+  
+  // 3. For direct messages, use from field
+  if (message.from) {
+    return message.from;
+  }
+  
+  // 4. Fallback: check key structure (Baileys format)
+  if (message.key) {
+    return message.key.participant || message.key.remoteJid;
+  }
+  
+  return null;
 }
 
 module.exports = {

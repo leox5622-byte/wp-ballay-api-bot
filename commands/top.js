@@ -1,5 +1,5 @@
-const { getUserData, log } = require('../scripts/helpers');
-const User = require('../models/User');
+const { getUserData, log, getAllUsers } = require('../scripts/helpers');
+// const User = require('../models/User'); // No longer needed
 
 module.exports = {
   config: {
@@ -13,16 +13,16 @@ module.exports = {
     }
   },
 
-  onStart: async function ({ message, args, client }) {
+  onStart: async function({ message, args, client, prefix, config, chat, contact }) {
     try {
       const type = (args[0] || "bal").toLowerCase();
 
       let users;
       if (type === "exp") {
-        users = await User.find({ exp: { $gt: 0 } }).sort({ exp: -1 }).limit(15);
+        users = await getAllUsers('exp', 15, { exp: { $gt: 0 } });
         if (!users.length) return message.reply("No users with EXP to display.");
       } else {
-        users = await User.find({ coins: { $gt: 0 } }).sort({ coins: -1 }).limit(15);
+        users = await getAllUsers('coins', 15, { coins: { $gt: 0 } });
         if (!users.length) return message.reply("No users with money to display.");
       }
 

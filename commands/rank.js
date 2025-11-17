@@ -1,5 +1,5 @@
 
-const { getUserData, log } = require('../scripts/helpers');
+const { getUserData, log, getAllUsers } = require('../scripts/helpers');
 
 module.exports = {
   config: {
@@ -18,7 +18,7 @@ module.exports = {
 
   onStart: async function ({ message, client, args, contact }) {
     try {
-      const User = require('../models/User');
+      // const User = require('../models/User'); // No longer needed
 
       if (args[0]?.toLowerCase() === 'top') {
         return await this.showLeaderboard(message, client);
@@ -49,8 +49,8 @@ module.exports = {
         }
       }
 
-      const allUsers = await User.find().sort({ exp: -1 });
-      const targetUser = await getUserData(targetUserId);
+      const allUsers = await getAllUsers('exp', 0, {}); // Get all users sorted by exp descending
+      const targetUser = await getUserData(targetUserId); // getUserData already handles both DB modes
       const rank = allUsers.findIndex(u => u.id === targetUserId) + 1;
 
       const xpForCurrent = this.getXPForLevel(targetUser.level);
@@ -87,9 +87,9 @@ ${bar} ${Math.round(percent * 100)}%
   },
 
   async showLeaderboard(message, client) {
-    const User = require('../models/User');
+    // const User = require('../models/User'); // No longer needed
     try {
-      const top = await User.find().sort({ exp: -1 }).limit(10);
+      const top = await getAllUsers('exp', 10, {}); // Get top 10 users by exp
       if (!top.length) return await message.reply("📊 No users on the leaderboard yet!");
 
       let text = "🏆 Top 10 Leaderboard\n━━━━━━━━━━━━━━━━━━━━━\n";

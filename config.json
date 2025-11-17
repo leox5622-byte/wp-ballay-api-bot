@@ -1,36 +1,35 @@
 {
   "whatsapp": {
-    "clientId": "whatsapp-bot",
+    "clientId": "whatsapp-bot-production",
     "headless": true,
     "dataPath": "./auth_data"
   },
   "bot": {
     "prefix": "!",
-    "name": "DoraBot",
+    "name": "WhatsApp Bot",
     "defaultLang": "en",
     "timezone": "Asia/Dhaka",
     "enableWordTriggers": true,
-    "enableOnReply": true
+    "enableOnReply": true,
+    "version": "2.0.0"
   },
   "adminBot": [
-    "",
-    "60734361149638@lid",
-    "8801723153138@s.whatsapp.net"
+    "YOUR_PHONE_NUMBER@c.us"
   ],
   "adminOnly": false,
   "whiteListMode": {
-    "enabled": true,
-    "whiteListIds": ["8801723153138@s.whatsapp.net"]
+    "enabled": false,
+    "whiteListIds": [],
+    "whiteListedGroups": []
   },
   "database": {
     "type": "json",
-    "uri": "mongodb+srv://m:ttnRAhj81Jik@cluster0.zwknjau.mongodb.net/GoatBotV2?retryWrites=true&w=majority&appName=Cluster0",
     "path": "./data/database.json",
     "autoSync": true
   },
   "dashBoard": {
     "enabled": true,
-    "port": 3001
+    "port": 10000
   },
   "autoRestart": {
     "enabled": true,
@@ -58,6 +57,9 @@
     "openai": {
       "apiKey": "your-openai-api-key",
       "model": "gpt-3.5-turbo"
+    },
+    "gemini": {
+      "apiKey": "AIzaSyBAj-cC1zF-hpQf7V46zp5V2kablfJp2P0"
     }
   },
   "rateLimiting": {

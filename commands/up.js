@@ -16,13 +16,16 @@ module.exports = {
   },
 
   onStart: async function ({ message }) {
-    const totalSeconds = process.uptime();
-
-    const hours = Math.floor(totalSeconds / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-    const seconds = Math.floor(totalSeconds % 60);
-
-    const uptimeStr = `${hours}h ${minutes}m ${seconds}s`;
-    await message.reply(`⏳ Bot Uptime: ${uptimeStr}`);
-  }
+    try {
+      const totalSeconds = process.uptime();
+      const hours = Math.floor(totalSeconds / 3600);
+      const minutes = Math.floor((totalSeconds % 3600) / 60);
+      const seconds = Math.floor(totalSeconds % 60);
+      const uptimeStr = `${hours}h ${minutes}m ${seconds}s`;
+      await message.reply(`⏳ Bot Uptime: ${uptimeStr}`);
+    } catch (error) {
+      console.error(`Error in ${this.config.name}:`, error);
+      await message.reply('❌ An error occurred while executing this command.');
+    }
+  },
 };

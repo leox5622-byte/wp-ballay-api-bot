@@ -137,6 +137,7 @@ async function getUserData(userId, name = null) {
         level: 1,
         lastActive: Date.now(),
         commandCount: 0,
+        messageCount: 0, // Add messageCount field
         lastDailyReward: null,
         joinDate: Date.now()
       };
@@ -160,6 +161,7 @@ async function getUserData(userId, name = null) {
       level: 1,
       lastActive: Date.now(),
       commandCount: 0,
+      messageCount: 0, // Add messageCount field
       lastDailyReward: null,
       joinDate: Date.now()
     });
@@ -169,6 +171,60 @@ async function getUserData(userId, name = null) {
     await user.save();
   }
   return user;
+}
+
+// ✅ Get all users with DB-mode awareness
+async function getAllUsers(sortField = 'exp', limit = 0, filter = {}) {
+  if (currentDbMode === 'json') {
+    const db = await loadJsonDB();
+    let users = Object.values(db.users);
+
+    // Apply filter
+    users = users.filter(user => {
+      for (const key in filter) {
+        if (filter.hasOwnProperty(key)) {
+          const filterValue = filter[key];
+          const userValue = user[key];
+
+          if (typeof filterValue === 'object' && filterValue !== null && !Array.isArray(filterValue)) {
+            // Handle MongoDB-like operators for numbers
+            if (filterValue.$gt !== undefined && typeof userValue === 'number') {
+              if (!(userValue > filterValue.$gt)) return false;
+            }
+            // Add more operators as needed
+          } else if (userValue !== filterValue) {
+            return false;
+          }
+        }
+      }
+      return true;
+    });
+
+    // Apply sort
+    users.sort((a, b) => {
+      if (sortField.startsWith('-')) {
+        const field = sortField.substring(1);
+        return (b[field] || 0) - (a[field] || 0);
+      }
+      return (a[sortField] || 0) - (b[sortField] || 0);
+    });
+
+    // Apply limit
+    if (limit > 0) {
+      users = users.slice(0, limit);
+    }
+    return users;
+  }
+
+  // MongoDB mode
+  let query = User.find(filter);
+  if (sortField) {
+    query = query.sort({ [sortField]: -1 }); // Default to descending for now
+  }
+  if (limit > 0) {
+    query = query.limit(limit);
+  }
+  return await query;
 }
 
 // Update user data
@@ -312,7 +368,30 @@ module.exports = {
   updateUserData,
   getGroupData,
   updateGroupData,
+  getAllUsers, // Add the new helper function
   callOpenAI,
   downloadMedia,
-  trackCommand
+  trackCommand,
+  normalizeJid
 };
+
+// Normalize JID to a consistent format
+function normalizeJid(jid) {
+  if (!jid) return '';
+  let normalized = String(jid);
+
+  // If it's a group JID, return as is
+  if (normalized.includes('@g.us')) {
+    return normalized;
+  }
+
+  // For user JIDs, extract only the numerical part and append @s.whatsapp.net
+  // This handles formats like number@s.whatsapp.net, number@c.us, number@lid, or just a number
+  const match = normalized.match(/^(\d+)(?:@.*)?$/);
+  if (match && match[1]) {
+    return `${match[1]}@s.whatsapp.net`;
+  }
+  
+  // Fallback for any other unexpected formats
+  return normalized;
+}
