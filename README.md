@@ -250,6 +250,6 @@ If you find this project useful, please consider giving it a star!
 
 ---
 
-**Made with ❤️ by [Rahaman Leon](https://github.com/YOUR_USERNAME)**
+**Made with ❤️ by [Rahaman Leon](https://github.com/leox-2)**
 
 *Happy Botting! 🤖*
