@@ -24,7 +24,7 @@
   },
   "database": {
     "type": "json",
-    "path": "mongodb+srv://:JDaiiPRmtc4vJ9fC@cluster0.kvoyfpk.mongodb.net/GoatBotV2?retryWrites=true&w=majority&appName=Cluster0",
+    "path": "/data-base",
     "autoSync": true
   },
   "dashBoard": {
