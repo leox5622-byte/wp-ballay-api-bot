@@ -2,17 +2,11 @@ module.exports = {
   config: {
     name: "unsend",
     aliases: ["u", "uns", "r"],
-    version: "2.2",
+    version: "2.3",
     author: "Rahman Leon",
     coolDown: 5,
     role: 0,
-    category: "utility",
-    description: {
-      en: "Delete bot's recent message only"
-    },
-    guide: {
-      en: "Reply to a recent bot message and use {pn}"
-    }
+    category: "utility"
   },
 
   langs: {
@@ -28,32 +22,38 @@ module.exports = {
     const L = this.langs.en;
 
     try {
-      if (!message.quoted) {
+      // 1️⃣ Extract contextInfo safely (works for menus)
+      const ctx =
+        message?.message?.extendedTextMessage?.contextInfo ||
+        message?.message?.buttonsResponseMessage?.contextInfo ||
+        message?.message?.listResponseMessage?.contextInfo;
+
+      if (!ctx || !ctx.stanzaId) {
         return message.reply(L.syntaxError);
       }
 
-      const quoted = message.quoted;
       const botJid = client.user.id;
 
-      // Ownership check (Baileys-correct)
-      if (quoted.sender !== botJid) {
+      // 2️⃣ Ownership check (real one)
+      if (ctx.participant && ctx.participant !== botJid) {
         return message.reply(L.notBotMsg);
       }
 
-      // Time window: 2 minutes (safe & reliable)
+      // 3️⃣ Time limit (recent only)
       const MAX_AGE_MS = 2 * 60 * 1000;
-      const msgTime = quoted.messageTimestamp * 1000;
-      const now = Date.now();
+      const msgTime = ctx.messageTimestamp
+        ? ctx.messageTimestamp * 1000
+        : Date.now();
 
-      if (now - msgTime > MAX_AGE_MS) {
+      if (Date.now() - msgTime > MAX_AGE_MS) {
         return message.reply(L.tooOld);
       }
 
-      // Revoke
+      // 4️⃣ Revoke (Baileys-correct)
       await client.sendMessage(message.from, {
         delete: {
           remoteJid: message.from,
-          id: quoted.id,
+          id: ctx.stanzaId,
           fromMe: true
         }
       });
