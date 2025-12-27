@@ -1,14 +1,14 @@
 module.exports = {
   config: {
     name: "unsend",
-    aliases: ["u", "uns", "r"],
+    aliases: ["u", "uns", "r", "unsent"],
     version: "2.1",
     author: "Rahman Leon",
-    cooldown: 5,
+    coolDown: 5,
     role: 0,
     category: "utility",
     description: {
-      en: "Unsend bot message"
+      en: "Delete bot's own message"
     },
     guide: {
       en: "Reply to a bot message and use {pn}"
@@ -17,9 +17,9 @@ module.exports = {
 
   langs: {
     en: {
-      syntaxError: "Please reply to a bot message.",
-      notBotMsg: "That message was not sent by the bot.",
-      failed: "Failed to unsend the message."
+      syntaxError: "❌ Reply to a bot message.",
+      notBotMsg: "⚠️ This message was not sent by the bot.",
+      failed: "❌ Failed to delete the message."
     }
   },
 
@@ -27,40 +27,32 @@ module.exports = {
     const L = this.langs.en;
 
     try {
-      const ctx = message.message?.extendedTextMessage?.contextInfo;
-      if (!ctx?.stanzaId || !ctx?.participant) {
-        return client.sock.sendMessage(
-          message.key.remoteJid,
-          { text: L.syntaxError }
-        );
+      if (!message.quoted) {
+        return message.reply(L.syntaxError);
       }
 
-      const botJid = client.sock.user.id;
-      const quotedSender = ctx.participant;
+      const quoted = message.quoted;
 
-      // ✅ REAL bot-message check
-      if (quotedSender !== botJid) {
-        return client.sock.sendMessage(
-          message.key.remoteJid,
-          { text: L.notBotMsg }
-        );
+      // Bot JID (Baileys MD)
+      const botJid = client.user.id;
+
+      // REAL ownership check (NOT fromMe)
+      if (quoted.sender !== botJid) {
+        return message.reply(L.notBotMsg);
       }
 
-      await client.sock.sendMessage(message.key.remoteJid, {
+      // Required revoke payload
+      await client.sendMessage(message.from, {
         delete: {
-          remoteJid: message.key.remoteJid,
-          fromMe: true,
-          id: ctx.stanzaId,
-          participant: quotedSender
+          remoteJid: message.from,
+          id: quoted.id,
+          fromMe: true
         }
       });
 
     } catch (err) {
-      console.error("Unsend Error:", err);
-      return client.sock.sendMessage(
-        message.key.remoteJid,
-        { text: L.failed }
-      );
+      console.error("UNSEND ERROR:", err);
+      return message.reply(L.failed);
     }
   }
 };
