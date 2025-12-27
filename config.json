@@ -23,8 +23,8 @@
     "whiteListedGroups": []
   },
   "database": {
-    "type": "mongodb",
-    "path": "mongodb+srv://leox5622:JDaiiPRmtc4vJ9fC@cluster0.kvoyfpk.mongodb.net/GoatBotV2?retryWrites=true&w=majority&appName=Cluster0",
+    "type": "json",
+    "path": "mongodb+srv://:JDaiiPRmtc4vJ9fC@cluster0.kvoyfpk.mongodb.net/GoatBotV2?retryWrites=true&w=majority&appName=Cluster0",
     "autoSync": true
   },
   "dashBoard": {
