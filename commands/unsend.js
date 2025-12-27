@@ -1,17 +1,17 @@
 module.exports = {
   config: {
     name: "unsend",
-    aliases: ["u", "uns", "r", "unsent"],
-    version: "2.1",
+    aliases: ["u", "uns", "r"],
+    version: "2.2",
     author: "Rahman Leon",
     coolDown: 5,
     role: 0,
     category: "utility",
     description: {
-      en: "Delete bot's own message"
+      en: "Delete bot's recent message only"
     },
     guide: {
-      en: "Reply to a bot message and use {pn}"
+      en: "Reply to a recent bot message and use {pn}"
     }
   },
 
@@ -19,6 +19,7 @@ module.exports = {
     en: {
       syntaxError: "❌ Reply to a bot message.",
       notBotMsg: "⚠️ This message was not sent by the bot.",
+      tooOld: "⏱️ This message is too old to delete.",
       failed: "❌ Failed to delete the message."
     }
   },
@@ -32,16 +33,23 @@ module.exports = {
       }
 
       const quoted = message.quoted;
-
-      // Bot JID (Baileys MD)
       const botJid = client.user.id;
 
-      // REAL ownership check (NOT fromMe)
+      // Ownership check (Baileys-correct)
       if (quoted.sender !== botJid) {
         return message.reply(L.notBotMsg);
       }
 
-      // Required revoke payload
+      // Time window: 2 minutes (safe & reliable)
+      const MAX_AGE_MS = 2 * 60 * 1000;
+      const msgTime = quoted.messageTimestamp * 1000;
+      const now = Date.now();
+
+      if (now - msgTime > MAX_AGE_MS) {
+        return message.reply(L.tooOld);
+      }
+
+      // Revoke
       await client.sendMessage(message.from, {
         delete: {
           remoteJid: message.from,
