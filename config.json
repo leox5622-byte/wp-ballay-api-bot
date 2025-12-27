@@ -23,7 +23,7 @@
     "whiteListedGroups": []
   },
   "database": {
-    "type": "json",
+    "type": "sqlite",
     "path": "/data-base",
     "autoSync": true
   },
