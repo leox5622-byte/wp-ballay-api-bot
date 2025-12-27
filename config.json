@@ -6,7 +6,7 @@
   },
   "bot": {
     "prefix": "!",
-    "name": "WhatsApp Bot",
+    "name": "Dora Wp Bot",
     "defaultLang": "en",
     "timezone": "Asia/Dhaka",
     "enableWordTriggers": true,
